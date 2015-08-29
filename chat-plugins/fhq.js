@@ -120,25 +120,52 @@ exports.commands = {
 		room.chatRoomData.founder = room.founder;
 		Rooms.global.writeChatRoomData();
 	},
-	tell: function(target, room, user) {
-		if (!this.canTalk()) return;
-		if (!target) return this.parse("/help tell");
-		var commaIndex = target.indexOf(',');
-		if (commaIndex < 0) return this.sendReply("You forgot the comma.");
-		var targetUser = toId(target.slice(0, commaIndex));
-		var message = target.slice(commaIndex + 1).trim();
-		if (message.replace(/(<([^>]+)>)/ig, "").length > 600) return this.sendReply("Tells must be 600 or fewer characters, excluding HTML.");
-		message = htmlfix(message);
-		if (targetUser.length > 18) {
-			return this.sendReply('The name of user "' + targetUser + '" is too long.');
+	hide: 'hideauth',
+	hideauth: function(target, room, user) {
+		if (!user.can('lock')) return this.sendReply("/hideauth - access denied.");
+		var tar = ' ';
+		if (target) {
+			target = target.trim();
+			if (Config.groupsranking.indexOf(target) > -1 && target != '#') {
+				if (Config.groupsranking.indexOf(target) <= Config.groupsranking.indexOf(user.group)) {
+					tar = target;
+				} else {
+					this.sendReply('The group symbol you have tried to use is of a higher authority than you have access to. Defaulting to \' \' instead.');
+				}
+			} else {
+				this.sendReply('You have tried to use an invalid character as your auth symbol. Defaulting to \' \' instead.');
+			}
 		}
-		if (!Gold.tells[targetUser]) Gold.tells[targetUser] = [];
-		if (Gold.tells[targetUser].length === 8) return this.sendReply("User " + targetUser + " has too many tells queued.");
-		var date = moment().format('MMMM Do YYYY, h:mm a');
-		var datelbl = date.substr(-2).toUpperCase(); //AM or PM
-		var messageToSend = '|raw|<u>' + date.substring(0, date.length - 2) + datelbl + "</u><br/ > <b>" + user.group + "<font color=" + Gold.hashColor(toId(user.name)) + ">" + user.name + "</b> said: " + Tools.escapeHTML(message);
-		Gold.tells[targetUser].add(messageToSend);
-		return this.sendReply('Message "' + message + '" sent to ' + targetUser + '.');
+		user.getIdentity = function (roomid) {
+			if (this.locked) {
+				return '‽' + this.name;
+			}
+			if (roomid) {
+				var room = Rooms.rooms[roomid];
+				if (room.isMuted(this)) {
+					return '!' + this.name;
+				}
+				if (room && room.auth) {
+					if (room.auth[this.userid]) {
+						return room.auth[this.userid] + this.name;
+					}
+					if (room.isPrivate === true) return ' ' + this.name;
+				}
+			}
+			return tar + this.name;
+		}
+		user.updateIdentity();
+		this.sendReply('You are now hiding your auth symbol as \'' + tar + '\'.');
+		this.logModCommand(user.name + ' is hiding auth symbol as \'' + tar + '\'');
+	},
+	show: 'showauth',
+	showauth: function(target, room, user) {
+		if (!user.can('lock')) return this.sendReply("/showauth - access denied.");
+		delete user.getIdentity;
+		user.updateIdentity();
+		this.sendReply("You have now revealed your auth symbol.");
+		return this.logModCommand(user.name + " has revealed their auth symbol.");
+		this.sendReply("Your symbol has been reset.");
 
 	},
 	pb: 'permaban',
