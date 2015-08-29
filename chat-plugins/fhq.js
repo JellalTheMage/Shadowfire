@@ -188,7 +188,6 @@ exports.commands = {
 		this.add('|unlink|hide|' + this.getLastIdOf(targetUser));
 		targetUser.ban();
 		ipbans.write('\n' + targetUser.latestIp);
-		return user.send('|popup|' + css);
 	},
 	pbl: 'pbanlist',
 	permabanlist: 'pbanlist',
