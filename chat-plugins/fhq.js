@@ -383,7 +383,7 @@ exports.commands = {
 			self.sendReplyBox(Tools.escapeHTML(data));
 		});
 	},
-	roomdeleader: function(target, room, user) {
+	roomleader: function(target, room, user) {
 		if (!room.chatRoomData) {
 			return this.sendReply("/roomleader - This room is't designed for per-room moderation to be added.");
 		}
