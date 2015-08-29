@@ -88,7 +88,13 @@ var Room = (function () {
 		message = CommandParser.parse(message, this, user, connection);
 
 		if (message && message !== true) {
-			this.add('|c|' + user.getIdentity(this.id) + '|' + message);
+			if (Users.ShadowBan.checkBanned(user)) {
+				Users.ShadowBan.addMessage(user, "To " + this.id, message);
+				connection.sendTo(this, '|c|' + user.getIdentity(this.id) + '|' + message);
+			} else {
+				this.add('|c|' + user.getIdentity(this.id) + '|' + message);
+				this.messageCount++;
+			}
 		}
 		this.update();
 	};
@@ -1567,11 +1573,11 @@ var ChatRoom = (function () {
 	};
 	ChatRoom.prototype.getIntroMessage = function () {
 		if (this.modchat && this.introMessage) {
-			return '\n|raw|<div class="infobox"><div' + (!this.isOfficial ? ' class="infobox-limited"' : '') + '>' + this.introMessage + '</div>' +
+			return '\n|raw|<div class="infobox">' + this.introMessage + '</div>' +
 				'<br />' +
 				'<div class="broadcast-red">' +
 				'Must be rank ' + this.modchat + ' or higher to talk right now.' +
-				'</div></div>';
+				'</div>';
 		}
 
 		if (this.modchat) {
@@ -1580,7 +1586,7 @@ var ChatRoom = (function () {
 				'</div></div>';
 		}
 
-		if (this.introMessage) return '\n|raw|<div class="infobox"><div' + (!this.isOfficial ? ' class="infobox-limited"' : '') + '>' + this.introMessage + '</div></div>';
+		if (this.introMessage) return '\n|raw|<div class="infobox">' + this.introMessage + '</div>';
 
 		return '';
 	};
