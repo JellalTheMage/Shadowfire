@@ -184,11 +184,6 @@ exports.commands = {
 	},
 	regdatehelp: ["/regdate - Please specify a valid username."],
 
-	show: function (target, room, user) {
-		if (!this.can('lock')) return false;
-		user.hiding = false;
-		user.updateIdentity();
-		this.sendReply("You have revealed your staff symbol.");
 	},
 
 	sb: 'showdownboilerplate',
