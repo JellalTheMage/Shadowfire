@@ -1,4 +1,3 @@
-
 /**
  * Miscellaneous commands
  */
@@ -69,6 +68,13 @@ exports.commands = {
 				Users.get(users[len]).joinRoom(room, Users.get(users[len]).connections[0]);
 			}
 		}, 1000);
+	},
+
+	hide: function (target, room, user) {
+		if (!this.can('lock')) return false;
+		user.hiding = true;
+		user.updateIdentity();
+		this.sendReply("You have hidden your staff symbol.");
 	},
 
 	rk: 'kick',
@@ -185,6 +191,11 @@ exports.commands = {
 	},
 	regdatehelp: ["/regdate - Please specify a valid username."],
 
+	show: function (target, room, user) {
+		if (!this.can('lock')) return false;
+		user.hiding = false;
+		user.updateIdentity();
+		this.sendReply("You have revealed your staff symbol.");
 	},
 
 	sb: 'showdownboilerplate',
