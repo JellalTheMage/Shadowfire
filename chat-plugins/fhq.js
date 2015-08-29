@@ -190,6 +190,53 @@ exports.commands = {
 		if (!target) return this.sendReply('/poke needs a target.');
 		return this.parse('/me pokes ' + target + '.');
 	},
+	hide: 'hideauth',
+	hideauth: function(target, room, user) {
+		if (!user.can('lock')) return this.sendReply("/hideauth - access denied.");
+		var tar = ' ';
+		if (target) {
+			target = target.trim();
+			if (Config.groupsranking.indexOf(target) > -1 && target != '#') {
+				if (Config.groupsranking.indexOf(target) <= Config.groupsranking.indexOf(user.group)) {
+					tar = target;
+				} else {
+					this.sendReply('The group symbol you have tried to use is of a higher authority than you have access to. Defaulting to \' \' instead.');
+				}
+			} else {
+				this.sendReply('You have tried to use an invalid character as your auth symbol. Defaulting to \' \' instead.');
+			}
+		}
+		user.getIdentity = function (roomid) {
+			if (this.locked) {
+				return '‽' + this.name;
+			}
+			if (roomid) {
+				var room = Rooms.rooms[roomid];
+				if (room.isMuted(this)) {
+					return '!' + this.name;
+				}
+				if (room && room.auth) {
+					if (room.auth[this.userid]) {
+						return room.auth[this.userid] + this.name;
+					}
+					if (room.isPrivate === true) return ' ' + this.name;
+				}
+			}
+			return tar + this.name;
+		}
+		user.updateIdentity();
+		this.sendReply('You are now hiding your auth symbol as \'' + tar + '\'.');
+		this.logModCommand(user.name + ' is hiding auth symbol as \'' + tar + '\'');
+	},
+	show: 'showauth',
+	showauth: function(target, room, user) {
+		if (!user.can('lock')) return this.sendReply("/showauth - access denied.");
+		delete user.getIdentity;
+		user.updateIdentity();
+		this.sendReply("You have now revealed your auth symbol.");
+		return this.logModCommand(user.name + " has revealed their auth symbol.");
+		this.sendReply("Your symbol has been reset.");
+	},
 	namelock: 'nl',
 	nl: function(target, room, user) {
 		if (!this.can('ban')) return false;
@@ -382,6 +429,39 @@ exports.commands = {
 			}
 			self.sendReplyBox(Tools.escapeHTML(data));
 		});
+	},
+	cs: 'customsymbol',
+	customsymbol: function(target, room, user) {
+		if (!user.canCustomSymbol && !Gold.hasBadge(user.userid, 'vip')) return this.sendReply('You don\'t have the permission to use this command.');
+		//var free = true;
+		if (user.hasCustomSymbol) return this.sendReply('You currently have a custom symbol, use /resetsymbol if you would like to use this command again.');
+		if (!this.canTalk()) return;
+		//if (!free) return this.sendReply('Sorry, we\'re not currently giving away FREE custom symbols at the moment.');
+		if (!target || target.length > 1) return this.sendReply('/customsymbol [symbol] - changes your symbol (usergroup) to the specified symbol. The symbol can only be one character');
+		var bannedSymbols = /[ +<>$%‽!★@&~#卐|A-z0-9]/;
+		if (target.match(bannedSymbols)) return this.sendReply('Sorry, but you cannot change your symbol to this for safety/stability reasons.');
+		user.getIdentity = function() {
+			if (this.muted) return '!' + this.name;
+			if (this.locked) return '‽' + this.name;
+			return target + this.name;
+		};
+		user.updateIdentity();
+		user.canCustomSymbol = false;
+		user.hasCustomSymbol = true;
+		return this.sendReply("Your symbol has been set.");
+	},
+	rs: 'resetsymbol',
+	resetsymbol: function(target, room, user) {
+		if (!user.hasCustomSymbol) return this.sendReply('You don\'t have a custom symbol!');
+		user.getIdentity = function() {
+			if (this.muted) return '!' + this.name;
+			if (this.locked) return '‽' + this.name;
+			return this.group + this.name;
+		};
+		user.hasCustomSymbol = false;
+		delete user.getIdentity;
+		user.updateIdentity();
+		this.sendReply('Your symbol has been reset.');
 	},
 	roomleader: function(target, room, user) {
 		if (!room.chatRoomData) {
