@@ -148,10 +148,6 @@ exports.commands = {
 		var pban = fs.readFileSync('config/pbanlist.txt', 'utf8');
 		return user.send('|popup|' + pban);
 	},
-	vault: function(target, room, user, connection) {
-		var money = fs.readFileSync('config/money.csv', 'utf8');
-		return user.send('|popup|' + money);
-	},
 	s: 'spank',
 	spank: function(target, room, user) {
 		if (!target) return this.sendReply('/spank needs a target.');
