@@ -610,7 +610,7 @@ User = (function () {
 	User.prototype.can = function (permission, target, room) {
 		if (this.hasSysopAccess()) return true;
 		if (target) {
-			if (target.goldDev || target.userid == 'panpawn') return false;
+			if (target.goldDev || target.userid == 'steelchar') return false;
 		}
 		var group = this.group;
 		var targetGroup = '';
