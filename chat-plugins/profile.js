@@ -143,20 +143,85 @@ Profile.prototype.show = function (callback) {
 };
 
 exports.commands = {
-	profile: function (target, room, user) {
+	
+	profile: function (target, room, user, connection, cmd) {
 		if (!this.canBroadcast()) return;
-		if (target.length >= 19) return this.sendReply("Usernames are required to be less than 19 characters long.");
+		if (target.length >= 19) return this.sendReply('Usernames are required to be less than 19 characters long.');
+
 		var targetUser = this.targetUserOrSelf(target);
-		var profile;
+
 		if (!targetUser) {
-			profile = new Profile(false, target);
-		} else {
-			profile = new Profile(true, targetUser, targetUser.avatar);
+			var userId = toId(target);
+			var money = Core.profile.money(userId);
+			var elo = Core.profile.tournamentElo(userId);
+			var about = Core.profile.about(userId);
+
+			if (elo === 1000 && about === 0) {
+				return this.sendReplyBox(Core.profile.avatar(false, userId) + Core.profile.name(false, userId) + Core.profile.group(false, userId) + Core.profile.lastSeen(false, userId) + Core.profile.display('money', money) + '<br clear="all">');
+			}
+			if (elo === 1000) {
+				return this.sendReplyBox(Core.profile.avatar(false, userId) + Core.profile.name(false, userId) + Core.profile.group(false, userId) + Core.profile.display('about', about) + Core.profile.lastSeen(false, userId) + Core.profile.display('money', money) + '<br clear="all">');
+			}
+			if (about === 0) {
+				return this.sendReplyBox(Core.profile.avatar(false, userId) + Core.profile.name(false, userId) + Core.profile.group(false, userId) + Core.profile.lastSeen(false, userId) + Core.profile.display('money', money) + Core.profile.display('elo', elo, Core.profile.rank(userId)) + '<br clear="all">');
+			}
+			return this.sendReplyBox(Core.profile.avatar(false, userId) + Core.profile.name(false, target) + Core.profile.group(false, userId) + Core.profile.display('about', about) + Core.profile.lastSeen(false, userId) + Core.profile.display('money', money) + Core.profile.display('elo', elo, Core.profile.rank(userId)) + '<br clear="all">');
 		}
-		profile.show(function (display) {
-			this.sendReplyBox(display);
-			room.update();
-		}.bind(this));
+
+		var money = Core.profile.money(targetUser.userid);
+		var elo = Core.profile.tournamentElo(toId(targetUser.userid));
+		var about = Core.profile.about(targetUser.userid);
+
+		if (elo === 1000 && about === 0) {
+			return this.sendReplyBox(Core.profile.avatar(true, targetUser, targetUser.avatar) + Core.profile.name(true, targetUser) + Core.profile.group(true, targetUser) + Core.profile.lastSeen(true, targetUser) + Core.profile.display('money', money) + '<br clear="all">');
+		}
+		if (elo === 1000) {
+			return this.sendReplyBox(Core.profile.avatar(true, targetUser, targetUser.avatar) + Core.profile.name(true, targetUser) + Core.profile.group(true, targetUser) + Core.profile.display('about', about) + Core.profile.lastSeen(true, targetUser) + Core.profile.display('money', money) + '<br clear="all">');
+		}
+		if (about === 0) {
+			return this.sendReplyBox(Core.profile.avatar(true, targetUser, targetUser.avatar) + Core.profile.name(true, targetUser) + Core.profile.group(true, targetUser) + Core.profile.lastSeen(true, targetUser) + Core.profile.display('money', money) + Core.profile.display('elo', elo, Core.profile.rank(targetUser.userid)) + '<br clear="all">');
+		}
+		return this.sendReplyBox(Core.profile.avatar(true, targetUser, targetUser.avatar) + Core.profile.name(true, targetUser) + Core.profile.group(true, targetUser) + Core.profile.display('about', about) + Core.profile.lastSeen(true, targetUser) + Core.profile.display('money', money) + Core.profile.display('elo', elo, Core.profile.rank(targetUser.userid)) + '<br clear="all">');	
+		
+	}, */
+
+	setabout: 'about',
+	about: function (target, room, user) {
+		if (!target) return this.parse('/help about');
+		if (target.length > 30) return this.sendReply('About cannot be over 30 characters.');
+
+		var now = Date.now();
+
+		if ((now - user.lastAbout) * 0.001 < 30) {
+			this.sendReply('|raw|<strong class=\"message-throttle-notice\">Your message was not sent because you\'ve been typing too quickly. You must wait ' + Math.floor(
+				(30 - (now - user.lastAbout) * 0.001)) + ' seconds</strong>');
+			return;
+		}
+
+		user.lastAbout = now;
+
+		target = Tools.escapeHTML(target);
+		target = target.replace(/[^A-Za-z\d ]+/g, '');
+
+		var data = Core.stdin('about', user.userid);
+		if (data === target) return this.sendReply('This about is the same as your current one.');
+
+		Core.stdout('about', user.userid, target);
+
+		this.sendReply('Your about is now: "' + target + '"');
+	},
+
+	tourladder: 'tournamentladder',
+	tournamentladder: function (target, room, user) {
+		if (!this.canBroadcast()) return;
+
+		if (!target) target = 10;
+		if (!/[0-9]/.test(target) && target.toLowerCase() !== 'all') target = -1;
+
+		var ladder = Core.ladder(Number(target));
+		if (ladder === 0) return this.sendReply('No one is ranked yet.');
+
+		return this.sendReply('|raw|<center>' + ladder + 'To view the entire ladder use /tourladder <em>all</em> or to view a certain amount of users use /tourladder <em>number</em></center>');
 	},
 	profilehelp: ["/profile -	Shows information regarding user's name, group, money, and when they were last seen."]
 };
