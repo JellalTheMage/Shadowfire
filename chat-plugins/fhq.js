@@ -471,58 +471,37 @@ exports.commands = {
 			}
 			self.sendReplyBox(Tools.escapeHTML(data));
 		});
-	}, 
-
-	customsymbol: function (target, room, user) {
-		if (!user.canCustomSymbol && !user.can('vip')) return this.sendReply('You need to buy this item from the shop to use.');
-		if (!target || target.length > 1) return this.parse('/help customsymbol');
-		//if (target.match(/[A-Za-z\d]+/g) || 'â€½!+%@\u2605\u2606&~#'.indexOf(target) >= 0) return this.sendReply('Sorry, but you cannot change your symbol to this for safety/stability reasons.');
-		var bannedSymbols = /[ +<>%‽!★@&~#卐|A-z0-9]/;
+	},
+	cs: 'customsymbol',
+	customsymbol: function(target, room, user) {
+		if (!user.canCustomSymbol && !Gold.hasBadge(user.userid, 'vip')) return this.sendReply('You don\'t have the permission to use this command.');
+		//var free = true;
+		if (user.hasCustomSymbol) return this.sendReply('You currently have a custom symbol, use /resetsymbol if you would like to use this command again.');
+		if (!this.canTalk()) return;
+		//if (!free) return this.sendReply('Sorry, we\'re not currently giving away FREE custom symbols at the moment.');
+		if (!target || target.length > 1) return this.sendReply('/customsymbol [symbol] - changes your symbol (usergroup) to the specified symbol. The symbol can only be one character');
+		var bannedSymbols = /[ +<>$%‽!★@&~#卐|A-z0-9]/;
 		if (target.match(bannedSymbols)) return this.sendReply('Sorry, but you cannot change your symbol to this for safety/stability reasons.');
-		user.getIdentity = function (roomid) {
-			if (!roomid) roomid = 'lobby';
-			var name = this.name + (this.away ? " - \u0410\u051d\u0430\u0443" : "");
-			if (this.locked) {
-				return '‽' + name;
-			}
-			if (this.mutedRooms[roomid]) {
-				return '!' + name;
-			}
-			var room = Rooms.rooms[roomid];
-			if (room.auth) {
-				if (room.auth[this.userid]) {
-					return room.auth[this.userid] + name;
-				}
-				if (room.isPrivate) return ' ' + name;
-			}
-			return target + name;
+		user.getIdentity = function() {
+			if (this.muted) return '!' + this.name;
+			if (this.locked) return '‽' + this.name;
+			return target + this.name;
 		};
 		user.updateIdentity();
 		user.canCustomSymbol = false;
 		user.hasCustomSymbol = true;
+		return this.sendReply("Your symbol has been set.");
 	},
-
-	resetsymbol: function (target, room, user) {
-		if (!user.hasCustomSymbol) return this.sendReply('You don\'t have a custom symbol.');
-		user.getIdentity = function (roomid) {
-			if (!roomid) roomid = 'lobby';
-			var name = this.name + (this.away ? " - \u0410\u051d\u0430\u0443" : "");
-			if (this.locked) {
-				return 'â€½' + name;
-			}
-			if (this.mutedRooms[roomid]) {
-				return '!' + name;
-			}
-			var room = Rooms.rooms[roomid];
-			if (room.auth) {
-				if (room.auth[this.userid]) {
-					return room.auth[this.userid] + name;
-				}
-				if (room.isPrivate) return ' ' + name;
-			}
-			return this.group + name;
+	rs: 'resetsymbol',
+	resetsymbol: function(target, room, user) {
+		if (!user.hasCustomSymbol) return this.sendReply('You don\'t have a custom symbol!');
+		user.getIdentity = function() {
+			if (this.muted) return '!' + this.name;
+			if (this.locked) return '‽' + this.name;
+			return this.group + this.name;
 		};
 		user.hasCustomSymbol = false;
+		delete user.getIdentity;
 		user.updateIdentity();
 		this.sendReply('Your symbol has been reset.');
 	},
