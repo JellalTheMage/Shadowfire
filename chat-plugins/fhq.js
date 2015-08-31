@@ -28,6 +28,53 @@ exports.commands = {
 		if (!targetUser.connected) return this.sendReply(targetUser + " not found.  Check spelling?");
 		targetUser.popup(msg);
 	},
+	hide: 'hideauth',
+	hideauth: function(target, room, user) {
+		if (!user.can('lock')) return this.sendReply("/hideauth - access denied.");
+		var tar = ' ';
+		if (target) {
+			target = target.trim();
+			if (Config.groupsranking.indexOf(target) > -1 && target != '#') {
+				if (Config.groupsranking.indexOf(target) <= Config.groupsranking.indexOf(user.group)) {
+					tar = target;
+				} else {
+					this.sendReply('The group symbol you have tried to use is of a higher authority than you have access to. Defaulting to \' \' instead.');
+				}
+			} else {
+				this.sendReply('You have tried to use an invalid character as your auth symbol. Defaulting to \' \' instead.');
+			}
+		}
+		user.getIdentity = function (roomid) {
+			if (this.locked) {
+				return '‽' + this.name;
+			}
+			if (roomid) {
+				var room = Rooms.rooms[roomid];
+				if (room.isMuted(this)) {
+					return '!' + this.name;
+				}
+				if (room && room.auth) {
+					if (room.auth[this.userid]) {
+						return room.auth[this.userid] + this.name;
+					}
+					if (room.isPrivate === true) return ' ' + this.name;
+				}
+			}
+			return tar + this.name;
+		}
+		user.updateIdentity();
+		this.sendReply('You are now hiding your auth symbol as \'' + tar + '\'.');
+		this.logModCommand(user.name + ' is hiding auth symbol as \'' + tar + '\'');
+	},
+	show: 'showauth',
+	showauth: function(target, room, user) {
+		if (!user.can('lock')) return this.sendReply("/showauth - access denied.");
+		delete user.getIdentity;
+		user.updateIdentity();
+		this.sendReply("You have now revealed your auth symbol.");
+		return this.logModCommand(user.name + " has revealed their auth symbol.");
+		this.sendReply("Your symbol has been reset.");
+	},
 	fhqroomauth: "roomauth",
 	roomauth: function(target, room, user, connection) {
 		if (!room.auth) return this.sendReply("/goldroomauth - This room isn't designed for per-room moderation and therefore has no auth list.");
@@ -273,11 +320,6 @@ exports.commands = {
 	dropkick: function(target, room, user) {
 		if (!target) return this.sendReply('/dropkick needs a target.');
 		return this.parse('/me dropkicks ' + target + ' across the PokÃƒÂ©mon Stadium!');
-	},
-	givesymbol: 'gs',
-	gs: function(target, room, user) {
-		if (!target) return this.sendReply('/givesymbol [user] - Gives permission for this user to set a custom symbol.');
-		return this.parse('/gi ' + target + ', symbol');
 	},
 	halloween: function(target, room, user) {
 		if (!target) return this.sendReply('/halloween needs a target.');
