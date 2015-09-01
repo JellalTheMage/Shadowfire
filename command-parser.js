@@ -36,7 +36,6 @@ const BROADCAST_TOKEN = '!';
 
 var fs = require('fs');
 var path = require('path');
-var parseEmoticons = require('./chat-plugins/emoticons').parseEmoticons;
 
 /*********************************************************
  * Load command files
@@ -525,9 +524,32 @@ var parse = exports.parse = function (message, room, user, connection, levelsDee
 		}
 	}
 
-	message = canTalk.call(context, user, room, connection, message);
+	message = canTalk(user, room, connection, cmdToken + message);
+	if (!message) return false;
 
-	if (parseEmoticons(message, room, user)) return;
+	if (VALID_COMMAND_TOKENS.includes(message.charAt(0)) && message.charAt(1) !== message.charAt(0)) {
+		return parse(message, room, user, connection, levelsDeep + 1);
+	}
+	
+	if (user.registered && global.Gold.tells) {
+		var alts = user.getAlts();
+		alts.push(user.name);
+		alts.map(toId).forEach(function (user) {
+			if (Gold.tells[user]) {
+				Gold.tells[user].forEach(connection.sendTo.bind(connection, room));
+				delete Gold.tells[user];
+			}
+		});
+	}
+	
+	if (nightclub[room.id]) {
+		room.addRaw('<div class="nightclub"><font size="3"><small>' + nightclubify((room.auth ? (room.auth[user.userid] || user.group) : user.group)) + "</small><b>" + nightclubify(Tools.escapeHTML(user.name) + ":") + "</b> " + nightclubify((message)) + '</font></div>');
+		return false;
+	}
+
+	try {
+		if (!Gold.emoticons.processChatData(user, room, connection, message)) return false;
+	} catch (e) {}
 
 	return message || false;
 };
