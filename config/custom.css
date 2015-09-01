@@ -1,10 +1,9 @@
-
 body {
     background:url("http://i.imgur.com/FH8iFib.jpg") !important;
     background-color: #344B6C;
     color: #FFFFFF;
   }
-
+  
   #header {
     font-family: Verdana,Helvetica,Arial,sans-serif;
     background:url("");
@@ -15,7 +14,10 @@ body {
     background: rgba(230, 240, 255, 0.8);
     border-right: -1px;
   }
-  
+  .nightclub {
+    background: #000;
+    margin: -3px;
+  }
   .pad {
     border-right: 0px;
   }
