@@ -249,7 +249,7 @@ exports.grouplist = [
 	{
 		symbol: '~',
 		id: "God of the Plebs",
-		name: "God of the PLeb",
+		name: "God of the Plebs",
 		root: true,
 		globalonly: true
 	},
