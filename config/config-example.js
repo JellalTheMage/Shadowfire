@@ -248,15 +248,15 @@ exports.replsocketmode = 0600;
 exports.grouplist = [
 	{
 		symbol: '~',
-		id: "admin",
-		name: "Administrator",
+		id: "God of the Plebs",
+		name: "God of the PLeb",
 		root: true,
 		globalonly: true
 	},
 	{
 		symbol: '&',
-		id: "leader",
-		name: "Leader",
+		id: "Higher Angel of the Plebs",
+		name: "Higher Angel of the Plebs",
 		inherit: '@',
 		jurisdiction: '@u',
 		promote: 'u',
@@ -271,8 +271,8 @@ exports.grouplist = [
 	},
 	{
 		symbol: '#',
-		id: "owner",
-		name: "Room Owner",
+		id: "Chief of Plebs",
+		name: "Chief of the Plebs",
 		inherit: '@',
 		jurisdiction: 'u',
 		roommod: true,
@@ -284,8 +284,8 @@ exports.grouplist = [
 	},
 	{
 		symbol: '\u2605',
-		id: "player",
-		name: "Player",
+		id: "pleb player",
+		name: "pleb Player",
 		inherit: '+',
 		roomvoice: true,
 		modchat: true,
@@ -295,8 +295,8 @@ exports.grouplist = [
 	},
 	{
 		symbol: '@',
-		id: "mod",
-		name: "Moderator",
+		id: "Pleb Bishop",
+		name: "Pleb Bishop",
 		inherit: '%',
 		jurisdiction: 'u',
 		ban: true,
@@ -309,8 +309,8 @@ exports.grouplist = [
 	},
 	{
 		symbol: '%',
-		id: "driver",
-		name: "Driver",
+		id: "Pleb Knight",
+		name: "Pleb Knight",
 		inherit: '+',
 		jurisdiction: 'u',
 		announce: true,
@@ -330,14 +330,16 @@ exports.grouplist = [
 	},
 	{
 		symbol: '+',
-		id: "voice",
-		name: "Voice",
-		inherit: ' ',
+		id: "pleb with rights",
+		name: "pleb with rights",
+		inherit: '\u262D',
 		broadcast: true
 	},
 	{
-		symbol: ' ',
+		symbol: '\u262D',
 		ip: 's',
+		id: "scummy pleb",
+		name: "scummy pleb",
 		alts: 's'
 	}
 ];
