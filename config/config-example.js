@@ -248,8 +248,8 @@ exports.replsocketmode = 0600;
 exports.grouplist = [
 	{
 		symbol: '~',
-		id: "God of the Plebs",
-		name: "God of the Plebs",
+		id: "God",
+		name: "God",
 		root: true,
 		globalonly: true
 	},
